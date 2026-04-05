@@ -53,4 +53,12 @@ export const analyticsAPI = {
   getSurveyAnalytics: (surveyId) => api.get(`/admin/analytics/${surveyId}`),
 };
 
+// ─── Settings ───────────────────────────────────────
+export const settingsAPI = {
+  getProfile:      ()       => api.get('/admin/settings/profile'),
+  updateProfile:   (data)   => api.put('/admin/settings/profile', data),
+  changePassword:  (data)   => api.put('/admin/settings/password', data),
+  deleteAccount:   (data)   => api.delete('/admin/settings/account', { data }),
+};
+
 export default api;
