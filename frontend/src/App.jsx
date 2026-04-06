@@ -1,6 +1,7 @@
 // src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -18,31 +19,29 @@ import Layout from './components/Layout';
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/survey/:publicId" element={<PublicSurvey />} />
-          <Route path="/survey/success" element={<SurveySuccess />} />
-
-          {/* Protected admin routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route element={<Layout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/surveys" element={<MySurveys />} />
-              <Route path="/surveys/create" element={<CreateSurvey />} />
-              <Route path="/surveys/edit/:id" element={<EditSurvey />} />
-              <Route path="/analytics/:id" element={<Analytics />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/profile" element={<Profile />} />
+      <ThemeProvider>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/survey/:publicId" element={<PublicSurvey />} />
+            <Route path="/survey/success" element={<SurveySuccess />} />
+            <Route element={<ProtectedRoute />}>
+              <Route element={<Layout />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/surveys" element={<MySurveys />} />
+                <Route path="/surveys/create" element={<CreateSurvey />} />
+                <Route path="/surveys/edit/:id" element={<EditSurvey />} />
+                <Route path="/analytics/:id" element={<Analytics />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/profile" element={<Profile />} />
+              </Route>
             </Route>
-          </Route>
-
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </AuthProvider>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

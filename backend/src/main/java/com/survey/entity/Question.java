@@ -15,8 +15,9 @@ import java.util.List;
 public class Question {
 
     public enum QuestionType {
-        TEXT,   // Free-text answer
-        MCQ     // Multiple choice question
+        TEXT,    // Free-text / suggestion answer
+        MCQ,     // Multiple choice question
+        RATING   // Star rating 1-5
     }
 
     @Id

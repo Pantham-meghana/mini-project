@@ -33,4 +33,7 @@ public class Answer {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "selected_option_id")
     private Option selectedOption;
+
+    /** Populated for RATING questions (value 1-5). */
+    private Integer ratingAnswer;
 }

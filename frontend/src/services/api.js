@@ -53,6 +53,12 @@ export const analyticsAPI = {
   getSurveyAnalytics: (surveyId) => api.get(`/admin/analytics/${surveyId}`),
 };
 
+// ─── CSV Export ─────────────────────────────────────
+export const exportAPI = {
+  downloadCsv: (surveyId) =>
+    api.get(`/admin/export/${surveyId}/csv`, { responseType: 'blob' }),
+};
+
 // ─── Settings ───────────────────────────────────────
 export const settingsAPI = {
   getProfile:      ()       => api.get('/admin/settings/profile'),

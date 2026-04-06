@@ -53,10 +53,7 @@ public class AnalyticsService {
                 .questionType(question.getQuestionType());
 
         if (question.getQuestionType() == Question.QuestionType.MCQ) {
-            // Aggregate MCQ option counts using JPQL query
-            List<Object[]> rows = answerRepository
-                    .countOptionSelectionsByQuestion(question.getId());
-
+            List<Object[]> rows = answerRepository.countOptionSelectionsByQuestion(question.getId());
             List<OptionCount> counts = rows.stream()
                     .map(row -> OptionCount.builder()
                             .optionId((Long) row[0])
@@ -65,10 +62,8 @@ public class AnalyticsService {
                             .build())
                     .collect(Collectors.toList());
 
-            // Include zero-count options too
             for (Option opt : question.getOptions()) {
-                boolean found = counts.stream()
-                        .anyMatch(c -> c.getOptionId().equals(opt.getId()));
+                boolean found = counts.stream().anyMatch(c -> c.getOptionId().equals(opt.getId()));
                 if (!found) {
                     counts.add(OptionCount.builder()
                             .optionId(opt.getId())
@@ -77,17 +72,37 @@ public class AnalyticsService {
                             .build());
                 }
             }
-
             builder.optionCounts(counts);
+
+        } else if (question.getQuestionType() == Question.QuestionType.RATING) {
+            List<Answer> ratingAnswers = answerRepository.findByQuestionId(question.getId());
+
+            // Distribution: index 0 = 1 star, index 4 = 5 stars
+            List<Long> distribution = new ArrayList<>(List.of(0L, 0L, 0L, 0L, 0L));
+            double total = 0;
+            int count = 0;
+
+            for (Answer a : ratingAnswers) {
+                if (a.getRatingAnswer() != null) {
+                    int r = a.getRatingAnswer();
+                    if (r >= 1 && r <= 5) {
+                        distribution.set(r - 1, distribution.get(r - 1) + 1);
+                        total += r;
+                        count++;
+                    }
+                }
+            }
+
+            double avg = count > 0 ? Math.round((total / count) * 10.0) / 10.0 : 0.0;
+            builder.averageRating(avg).ratingDistribution(distribution);
+
         } else {
-            // TEXT: collect all text answers
-            List<String> textAnswers = answerRepository
-                    .findByQuestionId(question.getId())
+            // TEXT
+            List<String> textAnswers = answerRepository.findByQuestionId(question.getId())
                     .stream()
                     .map(Answer::getTextAnswer)
                     .filter(t -> t != null && !t.isBlank())
                     .collect(Collectors.toList());
-
             builder.textAnswers(textAnswers);
         }
 

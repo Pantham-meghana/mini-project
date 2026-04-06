@@ -10,11 +10,9 @@ import java.util.List;
 
 /**
  * Analytics for a single question.
- *
- * <ul>
- *   <li>MCQ  questions → {@code optionCounts} is populated; {@code textAnswers} is null.</li>
- *   <li>TEXT questions → {@code textAnswers} is populated; {@code optionCounts} is null.</li>
- * </ul>
+ * MCQ     → optionCounts populated
+ * TEXT    → textAnswers populated
+ * RATING  → averageRating + ratingDistribution populated
  */
 @Data
 @NoArgsConstructor
@@ -26,9 +24,15 @@ public class QuestionAnalytics {
     private String questionText;
     private Question.QuestionType questionType;
 
-    /** Option-level vote counts — populated for MCQ questions. */
+    /** MCQ: option vote counts */
     private List<OptionCount> optionCounts;
 
-    /** Raw text answers — populated for TEXT questions. */
+    /** TEXT: raw text answers */
     private List<String> textAnswers;
+
+    /** RATING: average score out of 5 */
+    private Double averageRating;
+
+    /** RATING: count per star (index 0 = 1 star ... index 4 = 5 stars) */
+    private List<Long> ratingDistribution;
 }

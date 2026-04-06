@@ -13,6 +13,8 @@ import java.util.Map;
 
 /**
  * Handles public survey response submissions.
+ * Supports TEXT, MCQ, and RATING question types.
+ * Optionally sends a confirmation email to the respondent.
  */
 @Service
 @RequiredArgsConstructor
@@ -21,23 +23,17 @@ public class ResponseService {
     private final SurveyRepository surveyRepository;
     private final ResponseRepository responseRepository;
     private final AnswerRepository answerRepository;
+    private final EmailService emailService;
 
-    /**
-     * Submit a response to a published survey.
-     *
-     * @param publicId  the survey's UUID
-     * @param request   map of questionId → answer (text or optionId)
-     * @param clientIp  respondent IP address
-     */
     @Transactional
     public void submitResponse(String publicId, SubmitResponseRequest request, String clientIp) {
         Survey survey = surveyRepository.findByPublicIdAndPublishedTrue(publicId)
                 .orElseThrow(() -> new RuntimeException("Survey not found or not published"));
 
-        // Build the Response entity
         Response response = Response.builder()
                 .survey(survey)
                 .respondentIp(clientIp)
+                .respondentEmail(request.getRespondentEmail())
                 .build();
 
         List<Answer> answers = new ArrayList<>();
@@ -57,22 +53,36 @@ public class ResponseService {
             answer.setResponse(response);
             answer.setQuestion(question);
 
-            if (question.getQuestionType() == Question.QuestionType.TEXT) {
-                answer.setTextAnswer(value);
-            } else if (question.getQuestionType() == Question.QuestionType.MCQ) {
-                // value is the selected option id
-                Long optionId = Long.parseLong(value);
-                Option selected = question.getOptions().stream()
-                        .filter(o -> o.getId().equals(optionId))
-                        .findFirst()
-                        .orElseThrow(() -> new RuntimeException("Invalid option: " + optionId));
-                answer.setSelectedOption(selected);
+            switch (question.getQuestionType()) {
+                case TEXT -> answer.setTextAnswer(value);
+
+                case MCQ -> {
+                    Long optionId = Long.parseLong(value);
+                    Option selected = question.getOptions().stream()
+                            .filter(o -> o.getId().equals(optionId))
+                            .findFirst()
+                            .orElseThrow(() -> new RuntimeException("Invalid option: " + optionId));
+                    answer.setSelectedOption(selected);
+                }
+
+                case RATING -> {
+                    int rating = Integer.parseInt(value);
+                    if (rating < 1 || rating > 5) {
+                        throw new RuntimeException("Rating must be between 1 and 5");
+                    }
+                    answer.setRatingAnswer(rating);
+                }
             }
 
             answers.add(answer);
         }
 
         response.setAnswers(answers);
-        responseRepository.save(response);
+        Response saved = responseRepository.save(response);
+
+        // Send confirmation email asynchronously if email was provided
+        if (request.getRespondentEmail() != null && !request.getRespondentEmail().isBlank()) {
+            emailService.sendResponseConfirmation(request.getRespondentEmail(), survey, saved);
+        }
     }
 }

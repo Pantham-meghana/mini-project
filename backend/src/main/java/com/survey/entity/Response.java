@@ -26,6 +26,9 @@ public class Response {
     /** Optional: store respondent IP for dedup / analytics. */
     private String respondentIp;
 
+    /** Optional: respondent email — used to send confirmation email. */
+    private String respondentEmail;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime submittedAt;
 
