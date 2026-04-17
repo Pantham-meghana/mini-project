@@ -8,22 +8,18 @@ function StarRating({ value, onChange }) {
   return (
     <div className="flex gap-1">
       {[1,2,3,4,5].map(n => (
-        <button
-          key={n} type="button"
+        <button key={n} type="button"
           onMouseEnter={() => setHovered(n)}
           onMouseLeave={() => setHovered(0)}
           onClick={() => onChange(n)}
-          className="text-3xl transition-transform hover:scale-110 focus:outline-none"
-        >
-          <span className={
-            n <= (hovered || value)
-              ? 'text-yellow-400'
-              : 'text-slate-300'
-          }>★</span>
+          className="text-3xl transition-transform hover:scale-110 focus:outline-none">
+          <span className={n <= (hovered || value) ? 'text-yellow-400' : 'text-slate-300'}>★</span>
         </button>
       ))}
       {value > 0 && (
-        <span className="ml-2 text-sm text-slate-500 self-center">{value}/5</span>
+        <span className="ml-2 text-sm text-slate-500 self-center">
+          {value}/5 — {['','Poor','Fair','Good','Very Good','Excellent'][value]}
+        </span>
       )}
     </div>
   );
@@ -35,6 +31,7 @@ export default function PublicSurvey() {
   const [survey, setSurvey] = useState(null);
   const [answers, setAnswers] = useState({});
   const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -52,19 +49,37 @@ export default function PublicSurvey() {
       .finally(() => setLoading(false));
   }, [publicId]);
 
+  // Simple email format validator
+  const isValidEmail = (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setEmailError('');
+
+    // Validate required questions
     for (const q of survey.questions) {
       if (q.required && !answers[q.id]?.toString().trim()) {
-        setError(`Please answer: "${q.text}"`); return;
+        setError(`Please answer: "${q.text}"`);
+        return;
       }
     }
+
+    // ✅ Email is now REQUIRED
+    if (!email.trim()) {
+      setEmailError('Email is required to submit the survey.');
+      return;
+    }
+    if (!isValidEmail(email.trim())) {
+      setEmailError('Please enter a valid email address.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       await publicAPI.submitResponse(publicId, {
         answers,
-        respondentEmail: email.trim() || null,
+        respondentEmail: email.trim(),
       });
       navigate('/survey/success');
     } catch (err) {
@@ -98,9 +113,7 @@ export default function PublicSurvey() {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
           <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-white text-sm mb-4">S</div>
           <h1 className="text-2xl font-bold text-slate-900">{survey.title}</h1>
-          {survey.description && (
-            <p className="text-slate-500 mt-2">{survey.description}</p>
-          )}
+          {survey.description && <p className="text-slate-500 mt-2">{survey.description}</p>}
           <p className="text-slate-400 text-xs mt-4">
             {survey.questions.length} question{survey.questions.length !== 1 ? 's' : ''}
           </p>
@@ -113,6 +126,7 @@ export default function PublicSurvey() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+
           {/* Questions */}
           {survey.questions.map((q, i) => (
             <div key={q.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-3">
@@ -142,17 +156,11 @@ export default function PublicSurvey() {
                 <div className="space-y-2 ml-5">
                   {q.options.map(opt => (
                     <label key={opt.id} className="flex items-center gap-3 cursor-pointer group">
-                      <input
-                        type="radio"
-                        name={`q-${q.id}`}
-                        value={String(opt.id)}
+                      <input type="radio" name={`q-${q.id}`} value={String(opt.id)}
                         checked={answers[q.id] === String(opt.id)}
                         onChange={() => setAnswers(a => ({ ...a, [q.id]: String(opt.id) }))}
-                        className="text-indigo-600 focus:ring-indigo-400 border-slate-300"
-                      />
-                      <span className="text-slate-700 text-sm group-hover:text-slate-900 transition">
-                        {opt.text}
-                      </span>
+                        className="text-indigo-600 focus:ring-indigo-400 border-slate-300"/>
+                      <span className="text-slate-700 text-sm group-hover:text-slate-900 transition">{opt.text}</span>
                     </label>
                   ))}
                 </div>
@@ -165,36 +173,37 @@ export default function PublicSurvey() {
                     value={Number(answers[q.id]) || 0}
                     onChange={val => setAnswers(a => ({ ...a, [q.id]: String(val) }))}
                   />
-                  {answers[q.id] && (
-                    <p className="text-xs text-slate-400 mt-1">
-                      {{1:'Poor',2:'Fair',3:'Good',4:'Very Good',5:'Excellent'}[answers[q.id]]}
-                    </p>
-                  )}
                 </div>
               )}
             </div>
           ))}
 
-          {/* Optional email */}
+          {/* ✅ Email — now REQUIRED */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-            <p className="text-slate-700 font-medium text-sm mb-1">
-              📧 Get a copy of your response <span className="text-slate-400 font-normal">(optional)</span>
+            <p className="text-slate-800 font-medium text-sm mb-1">
+              📧 Your Email Address <span className="text-red-500">*</span>
             </p>
             <p className="text-slate-400 text-xs mb-3">
-              Enter your email and we'll send you a confirmation with your answers.
+              A confirmation with your answers will be sent to this email.
             </p>
             <input
-              type="email" value={email}
-              onChange={e => setEmail(e.target.value)}
+              type="email"
+              value={email}
+              onChange={e => { setEmail(e.target.value); setEmailError(''); }}
               placeholder="your@email.com"
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5
+              className={`w-full bg-slate-50 border rounded-lg px-4 py-2.5
                 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2
-                focus:ring-indigo-400 transition text-sm"
+                focus:ring-indigo-400 transition text-sm
+                ${emailError ? 'border-red-400 bg-red-50' : 'border-slate-200'}`}
             />
+            {emailError && (
+              <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                ⚠️ {emailError}
+              </p>
+            )}
           </div>
 
-          <button
-            type="submit" disabled={submitting}
+          <button type="submit" disabled={submitting}
             className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50
               disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition text-sm shadow-md">
             {submitting ? 'Submitting...' : 'Submit Response'}

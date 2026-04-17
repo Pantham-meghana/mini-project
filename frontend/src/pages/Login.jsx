@@ -31,7 +31,7 @@ export default function Login() {
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-xl mx-auto mb-4">S</div>
+          <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-xl mx-auto mb-4"></div>
           <h1 className="text-2xl font-bold text-white">Welcome back</h1>
           <p className="text-slate-400 mt-1">Sign in to your SurveyFlow account</p>
         </div>
